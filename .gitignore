@@ -1,0 +1,17 @@
+# Ignore node_modules in all subfolders
+**/node_modules/
+
+# Ignore .env files in all subfolders
+**/.env
+
+# Optional: ignore log files
+*.log
+
+# Optional: ignore build files (for frontend frameworks like React)
+**/dist/
+**/build/
+
+# Optional: ignore OS or editor junk
+.DS_Store
+.env.*
+.vscode/

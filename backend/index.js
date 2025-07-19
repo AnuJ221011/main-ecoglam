@@ -1,5 +1,5 @@
 const express = require('express');
-const mysql = require('mysql2/promise'); // MySQL package
+const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
@@ -10,13 +10,22 @@ const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
 
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', 'https://main-ecoglam.vercel.app/'); // Replace with your frontend origin
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE'); // Add allowed methods
-  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type'); // Add allowed headers
-  res.setHeader('Access-Control-Allow-Credentials', true); // If you need to handle credentials
-  next();
-});
+// Option 1: Use the cors middleware (Recommended)
+app.use(cors({
+  origin: [
+    'https://main-ecoglam.vercel.app',
+    'http://localhost:3000' // For local development
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With',
+    'Accept',
+    'Origin'
+  ]
+}));
 
 // Create MySQL connection pool
 const pool = mysql.createPool({

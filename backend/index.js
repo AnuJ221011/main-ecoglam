@@ -8,18 +8,30 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(express.json());
 
-// CORS middleware
-app.use(cors({
-  origin: [
+const allowedOrigins = [
   'http://localhost:5173',
-  'https://main-ecoglam.vercel.app',
-  'https://main-ecoglam.onrender.com/',
-],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  credentials: true,
-}));
+  'https://main-ecoglam.vercel.app'
+];
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200); // Preflight request
+  }
+  next();
+});
+
+
+app.use(express.json());
 
 // Create PostgreSQL connection pool
 const pool = new Pool({

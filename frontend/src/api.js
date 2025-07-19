@@ -1,12 +1,13 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://main-ecoglam.onrender.com/',
+  baseURL: 'https://main-ecoglam.onrender.com',
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, 
+  withCredentials: true, // Required if cookies or sessions are used
 });
+
 
 export const signup = async (userData) => {
   try {

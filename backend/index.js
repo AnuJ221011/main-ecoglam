@@ -9,14 +9,14 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
-const allowedOrigins = [
-  'http://localhost:5173',
-  'https://main-ecoglam.vercel.app'
-];
 
 // CORS middleware
 app.use(cors({
-  origin: '*',
+  origin: [
+  'http://localhost:5173',
+  'https://main-ecoglam.vercel.app',
+  'https://main-ecoglam-u3cy.vercel.app',
+],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
 }));
@@ -93,7 +93,8 @@ app.post('/login', async (req, res) => {
     res.status(200).json({ message: 'Login successful', token });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Login error:", err.stack || err);
+    return res.status(500).json({ message: 'Server error', error: err.message });
   }
 });
 

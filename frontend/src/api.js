@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://main-ecoglam-u3cy.vercel.app/',
+  baseURL: 'https://main-ecoglam-u3cy.vercel.app',
   headers: {
     'Content-Type': 'application/json',
   },

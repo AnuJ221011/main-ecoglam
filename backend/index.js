@@ -12,19 +12,7 @@ app.use(express.json());
 
 // Option 1: Use the cors middleware (Recommended)
 app.use(cors({
-  origin: [
-    'https://main-ecoglam.vercel.app',
-    'http://localhost:3000' // For local development
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: [
-    'Content-Type', 
-    'Authorization', 
-    'X-Requested-With',
-    'Accept',
-    'Origin'
-  ]
+  origin : '*'
 }));
 
 // Create MySQL connection pool
@@ -108,6 +96,10 @@ const authenticateJWT = (req, res, next) => {
 
 app.get('/protected', authenticateJWT, (req, res) => {
   res.status(200).json({ message: 'This is a protected route', user: req.user });
+});
+
+app.get('/', (req, res) => {
+  res.send('Hello, Backend is running!');
 });
 
 app.listen(PORT, () => {

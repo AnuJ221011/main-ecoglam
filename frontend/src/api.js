@@ -1,26 +1,11 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://main-ecoglam-72dt.vercel.app',
+  baseURL: 'http://localhost:5000',
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true,
 });
-
-// Add request interceptor to include auth token
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
 
 export const signup = async (userData) => {
   try {
@@ -28,13 +13,17 @@ export const signup = async (userData) => {
     const response = await api.post('/signup', userData);
     return response.data;
   } catch (error) {
+    // Check if the error response exists and handle accordingly
     if (error.response) {
+      // If the backend sent a response with an error status
       console.error("Error response:", error.response.data);
       throw new Error(error.response.data.message || 'An error occurred during signup');
     } else if (error.request) {
+      // If no response was received from the backend
       console.error("Error request:", error.request);
       throw new Error('No response received from server');
     } else {
+      // Other errors (e.g., network error)
       console.error("Error message:", error.message);
       throw new Error('An unexpected error occurred');
     }
@@ -44,42 +33,20 @@ export const signup = async (userData) => {
 export const login = async (userData) => {
   try {
     const response = await api.post('/login', userData);
-    // Store token in localStorage after successful login
-    if (response.data.token) {
-      localStorage.setItem('token', response.data.token);
-    }
     return response.data;
   } catch (error) {
+    // Check if the error response exists and handle accordingly
     if (error.response) {
+      // If the backend sent a response with an error status
       console.error("Error response:", error.response.data);
       throw new Error(error.response.data.message || 'An error occurred during login');
     } else if (error.request) {
+      // If no response was received from the backend
       console.error("Error request:", error.request);
       throw new Error('No response received from server');
     } else {
+      // Other errors (e.g., network error)
       console.error("Error message:", error.message);
-      throw new Error('An unexpected error occurred');
-    }
-  }
-};
-
-// Function to make authenticated requests
-export const makeAuthenticatedRequest = async (url, method = 'GET', data = null) => {
-  try {
-    const config = {
-      method,
-      url,
-      data,
-    };
-    
-    const response = await api(config);
-    return response.data;
-  } catch (error) {
-    if (error.response) {
-      throw new Error(error.response.data.message || 'An error occurred');
-    } else if (error.request) {
-      throw new Error('No response received from server');
-    } else {
       throw new Error('An unexpected error occurred');
     }
   }

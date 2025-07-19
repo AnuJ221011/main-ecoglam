@@ -1,5 +1,5 @@
 const express = require('express');
-const mysql = require('mysql2/promise');
+const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
@@ -9,46 +9,56 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
-
-// Option 1: Use the cors middleware (Recommended)
 app.use(cors({
-  origin : '*'
+  origin: ['http://localhost:5173', 'https://main-ecoglam.vercel.app'], 
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true,
 }));
 
-// Create MySQL connection pool
-const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
+
+// Create PostgreSQL connection pool
+const pool = new Pool({
+ connectionString: process.env.DATABASE_URL,
 });
 
+// create user table
+pool.query(`
+  CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL
+  );
+`);
+
 // Test DB connection
-(async () => {
-  try {
-    const connection = await pool.getConnection();
-    console.log('MySQL connected');
-    connection.release();
-  } catch (err) {
-    console.error('Error connecting to MySQL:', err);
+pool.connect((err, client, release) => {
+  if (err) {
+    return console.error('Error acquiring client', err.stack);
   }
-})();
+  console.log('PostgreSQL connected');
+  release();
+});
 
 // Signup route
 app.post('/signup', async (req, res) => {
   const { name, email, password } = req.body;
 
   try {
-    const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+    // Check if email already exists
+    const { rows } = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
     if (rows.length > 0) {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-    await pool.query('INSERT INTO users (name, email, password) VALUES (?, ?, ?)', [name, email, hashedPassword]);
+
+    // Insert user
+    await pool.query(
+      'INSERT INTO users (name, email, password) VALUES ($1, $2, $3)',
+      [name, email, hashedPassword]
+    );
 
     res.status(200).json({ message: 'User registered successfully' });
   } catch (err) {
@@ -62,7 +72,7 @@ app.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+    const { rows } = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
     if (rows.length === 0) {
       return res.status(400).json({ message: 'User not found' });
     }
@@ -73,6 +83,7 @@ app.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
+    // Generate JWT token
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
     res.status(200).json({ message: 'Login successful', token });
   } catch (err) {
@@ -81,11 +92,14 @@ app.post('/login', async (req, res) => {
   }
 });
 
+// JWT auth middleware
 const authenticateJWT = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
-  if (!token) return res.status(401).json({ message: 'Access denied' });
+  if (!token) {
+    return res.status(401).json({ message: 'Access denied' });
+  }
 
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) return res.status(403).json({ message: 'Invalid token' });
@@ -94,12 +108,9 @@ const authenticateJWT = (req, res, next) => {
   });
 };
 
+// Protected route example
 app.get('/protected', authenticateJWT, (req, res) => {
   res.status(200).json({ message: 'This is a protected route', user: req.user });
-});
-
-app.get('/', (req, res) => {
-  res.send('Hello, Backend is running!');
 });
 
 app.listen(PORT, () => {

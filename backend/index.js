@@ -1,5 +1,5 @@
 const express = require('express');
-const { Pool } = require('pg');
+const mysql = require('mysql2/promise'); // MySQL package
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
@@ -10,52 +10,45 @@ const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
 app.use(cors({
-  origin: ['https://ecoglam.vercel.app', 'https://ecoglam-xi.vercel.app'], 
+  origin: ['https://main-ecoglam.vercel.app/', 'http://localhost:5173'], 
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true,
 }));
 
-
-// Create PostgreSQL connection pool
-const pool = new Pool({
+// Create MySQL connection pool
+const pool = mysql.createPool({
   host: process.env.DB_HOST,
-  port: process.env.DB_PORT || 5432,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  ssl: {
-    rejectUnauthorized: false, // Render requires SSL but not client certs
-  },
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
 });
 
 // Test DB connection
-pool.connect((err, client, release) => {
-  if (err) {
-    return console.error('Error acquiring client', err.stack);
+(async () => {
+  try {
+    const connection = await pool.getConnection();
+    console.log('MySQL connected');
+    connection.release();
+  } catch (err) {
+    console.error('Error connecting to MySQL:', err);
   }
-  console.log('PostgreSQL connected');
-  release();
-});
+})();
 
 // Signup route
 app.post('/signup', async (req, res) => {
   const { name, email, password } = req.body;
 
   try {
-    // Check if email already exists
-    const { rows } = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
     if (rows.length > 0) {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Insert user
-    await pool.query(
-      'INSERT INTO users (name, email, password) VALUES ($1, $2, $3)',
-      [name, email, hashedPassword]
-    );
+    await pool.query('INSERT INTO users (name, email, password) VALUES (?, ?, ?)', [name, email, hashedPassword]);
 
     res.status(200).json({ message: 'User registered successfully' });
   } catch (err) {
@@ -69,7 +62,7 @@ app.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const { rows } = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
     if (rows.length === 0) {
       return res.status(400).json({ message: 'User not found' });
     }
@@ -80,7 +73,6 @@ app.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Generate JWT token
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
     res.status(200).json({ message: 'Login successful', token });
   } catch (err) {
@@ -89,14 +81,11 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// JWT auth middleware
 const authenticateJWT = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
-  if (!token) {
-    return res.status(401).json({ message: 'Access denied' });
-  }
+  if (!token) return res.status(401).json({ message: 'Access denied' });
 
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) return res.status(403).json({ message: 'Invalid token' });
@@ -105,7 +94,6 @@ const authenticateJWT = (req, res, next) => {
   });
 };
 
-// Protected route example
 app.get('/protected', authenticateJWT, (req, res) => {
   res.status(200).json({ message: 'This is a protected route', user: req.user });
 });

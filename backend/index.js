@@ -9,10 +9,21 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
+
+const allowedOrigins = [
+  "https://main-ecoglam.vercel.app/",
+  "http://localhost:5173"
+];
+
 app.use(cors({
-  origin: ['https://main-ecoglam.vercel.app/', 'http://localhost:5173'], 
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true,
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true
 }));
 
 // Create MySQL connection pool

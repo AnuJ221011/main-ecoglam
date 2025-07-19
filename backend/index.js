@@ -15,7 +15,7 @@ app.use(cors({
   origin: [
   'http://localhost:5173',
   'https://main-ecoglam.vercel.app',
-  'https://main-ecoglam-u3cy.vercel.app',
+  'https://main-ecoglam.onrender.com/',
 ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,

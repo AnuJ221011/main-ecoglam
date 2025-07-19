@@ -10,21 +10,13 @@ const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
 
-const allowedOrigins = [
-  "https://main-ecoglam.vercel.app/",
-  "http://localhost:5173"
-];
-
-app.use(cors({
-  origin: function(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true
-}));
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', 'https://main-ecoglam.vercel.app/'); // Replace with your frontend origin
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE'); // Add allowed methods
+  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type'); // Add allowed headers
+  res.setHeader('Access-Control-Allow-Credentials', true); // If you need to handle credentials
+  next();
+});
 
 // Create MySQL connection pool
 const pool = mysql.createPool({

@@ -1,10 +1,11 @@
 const ProfileDropdown = ({ userData, handleLogout }) => (
   <div className="relative group">
     <div className="avatar cursor-pointer">
-      <div className="w-8 h-8 rounded-full">
+      <div className="w-10 h-10 rounded-full">
         <img
-          src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
+          src="https://img.freepik.com/premium-vector/man-avatar-profile-picture-isolated-background-avatar-profile-picture-man_1293239-4841.jpg?semt=ais_hybrid&w=740"
           alt="profile"
+          className="w-full h-full rounded-full"
         />
       </div>
     </div>
